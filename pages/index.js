@@ -14,12 +14,10 @@ const IndexPage = () => {
   };
 
   const handleSubmit = async () => {
-    // Basic validations for both sign up and login
     if (!username || !password) {
       alert('Please enter username and password.');
       return;
     }
-    // Only enforce password length on sign up
     if (isSignup && password.length < 6) {
       alert('Password must be at least 6 characters long.');
       return;
@@ -29,7 +27,7 @@ const IndexPage = () => {
       return;
     }
     
-    // If signing up, check for duplicate username
+    // Check for duplicate username during sign-up
     if (isSignup) {
       try {
         const checkRes = await axios.post('/api/auth/checkusername', { username });
@@ -47,10 +45,7 @@ const IndexPage = () => {
     try {
       const endpoint = isSignup ? '/api/auth/signup' : '/api/auth/login';
       const res = await axios.post(endpoint, { username, password, faceDescriptor });
-      // Store token and username in localStorage
-      localStorage.setItem('authToken', res.data.token);
-      localStorage.setItem('username', username);
-      // Redirect to chat page
+      // No need to store token or username in localStorage – they're set as cookies on the server!
       window.location.href = '/chat';
     } catch (error) {
       alert(error.response?.data?.error || 'Authentication failed');

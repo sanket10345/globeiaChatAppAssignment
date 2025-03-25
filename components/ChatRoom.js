@@ -42,9 +42,7 @@ const ChatRoom = ({ token, roomName, username, createdBy, onExit }) => {
   useEffect(() => {
     const fetchChatHistory = async () => {
       try {
-        const res = await axios.get(`/api/chathistory?roomName=${roomName}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get(`/api/chathistory?roomName=${roomName}`);
         setChatHistory(markOldMessages(res.data));
       } catch (error) {
         console.error('Error fetching chat history:', error);

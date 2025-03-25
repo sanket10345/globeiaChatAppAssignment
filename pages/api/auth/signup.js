@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 
 const handler = createRouter();
 
-handler.post(async (req, res) => {
+export default async function handler(req, res) {
   const { username, password, faceDescriptor } = req.body;
 
   if (!faceDescriptor) {
@@ -32,6 +32,4 @@ handler.post(async (req, res) => {
 
   const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });
   res.status(201).json({ token });
-});
-
-export default handler.handler()
+}
