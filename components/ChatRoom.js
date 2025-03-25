@@ -19,7 +19,7 @@ const ChatRoom = ({ token, roomName, username, createdBy, onExit }) => {
     // Only run on client; use window.location.origin to connect to the same host.
     console.log("EXTERNAL_SOCKET_SERVER---------------------->",EXTERNAL_SOCKET_SERVER);
     socketRef.current = io(EXTERNAL_SOCKET_SERVER, {
-      path: '/api/socket',
+      //path: '/api/socket',
       transports: ["websocket"], // Force WebSocket transport
     });
     socketRef.current.emit('join-room', { roomName, username });
