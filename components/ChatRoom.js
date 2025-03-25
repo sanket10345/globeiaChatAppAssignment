@@ -1,48 +1,136 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import io from 'socket.io-client';
+import styles from '../styles/ChatRoom.module.css';
 
-let socket;
-
-const ChatRoom = ({ token, roomName, username }) => {
+const ChatRoom = ({ token, roomName, username, createdBy, onExit }) => {
+  const [chatHistory, setChatHistory] = useState([]);
   const [message, setMessage] = useState('');
-  const [chat, setChat] = useState([]);
+  const socketRef = useRef(null);
 
+  // Helper to mark fetched messages as "old"
+  const markOldMessages = (messages) =>
+    messages.map((msg) => ({ ...msg, isOld: true }));
+
+  // Initialize the socket connection on client side
   useEffect(() => {
-    socket = io({ path: '/api/socket' });
-
-    socket.emit('joinRoom', roomName);
-
-    socket.on('receiveMessage', (data) => {
-      setChat((prevChat) => [...prevChat, data]);
+    // Only run on client; use window.location.origin to connect to the same host.
+    socketRef.current = io(window.location.origin, {
+      path: '/api/socket',
     });
 
-    return () => {
-      socket.disconnect();
-    };
-  }, [roomName]);
+    socketRef.current.emit('join-room', { roomName, username });
 
-  const sendMessage = () => {
-    socket.emit('sendMessage', { room: roomName, message, username });
-    setMessage('');
+    socketRef.current.on('receive-message', (newMessage) => {
+      setChatHistory((prev) => [...prev, { ...newMessage, isOld: false }]);
+    });
+
+    // Clean up on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit('leave-room', { roomName, username });
+        socketRef.current.off('receive-message');
+        socketRef.current.disconnect();
+      }
+    };
+  }, [roomName, username]);
+
+  // Fetch chat history when roomName changes
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      try {
+        const res = await axios.get(`/api/chathistory?roomName=${roomName}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setChatHistory(markOldMessages(res.data));
+      } catch (error) {
+        console.error('Error fetching chat history:', error);
+      }
+    };
+
+    if (roomName) {
+      fetchChatHistory();
+    }
+  }, [roomName, token]);
+
+  const sendMessage = async () => {
+    if (!message.trim()) return;
+    const messageObj = { roomName, username, message };
+    try {
+      // Emit the message via Socket.io
+      socketRef.current.emit('send-message', messageObj);
+
+      // Store the message in the database via API
+      const res = await axios.post(
+        '/api/sendmessage',
+        messageObj,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Append message to chat history
+      setChatHistory((prev) => [...prev, { ...res.data, isOld: false }]);
+      setMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
 
+  const isAdmin = createdBy === username;
+
   return (
-    <div>
-      <h2>Room: {roomName}</h2>
-      <div style={{ border: '1px solid #ccc', height: '300px', overflowY: 'scroll', padding: '10px' }}>
-        {chat.map((msg, index) => (
-          <div key={index}>
-            <strong>{msg.username}</strong>: {msg.message}{' '}
-            <em>{new Date(msg.timestamp).toLocaleTimeString()}</em>
-          </div>
-        ))}
+    <div className={styles.chatRoom}>
+      <div className={styles.chatHeader}>
+        <h3>
+          Chat Room - {roomName}{' '}
+          {isAdmin ? ` (Admin: ${createdBy})` : ` (Created by: ${createdBy})`}
+        </h3>
+        <button onClick={onExit} className={styles.exitButton}>
+          Exit Room
+        </button>
       </div>
-      <input
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="Type a message..."
-      />
-      <button onClick={sendMessage}>Send</button>
+
+      <div className={styles.chatBody}>
+        <div className={styles.leftPanel}>
+          <h4>Online Users</h4>
+          <ul className={styles.userList}>
+            <li className={styles.userItem}>
+              <strong>{username} (You)</strong> 🟢
+            </li>
+            {/* Implement real presence tracking here */}
+          </ul>
+        </div>
+
+        <div className={styles.rightPanel}>
+          <div className={styles.chatHistory}>
+            <ul>
+              {chatHistory.map((msg, index) => (
+                <li
+                  key={index}
+                  className={`${styles.chatMessage} ${
+                    msg.isOld ? styles.oldMessage : ''
+                  }`}
+                >
+                  <strong>{msg.username}: </strong>
+                  <span>{msg.message}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className={styles.messageInput}>
+            <input
+              type="text"
+              placeholder="Type your message..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className={styles.input}
+            />
+            <button onClick={sendMessage} className={styles.sendButton}>
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

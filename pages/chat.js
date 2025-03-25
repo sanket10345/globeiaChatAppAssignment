@@ -3,75 +3,138 @@ import ChatRoom from '../components/ChatRoom';
 import SpeechToText from '../components/SpeechToText';
 import axios from 'axios';
 import { useRouter } from 'next/router';
+import styles from '../styles/ChatPage.module.css';
 
 const ChatPage = () => {
   const router = useRouter();
-  const { username, token } = router.query;
-  const [roomName, setRoomName] = useState('');
+  const [token, setToken] = useState('');
+  const [username, setUsername] = useState('');
+
+  // We store the entire selected room object here
+  const [selectedRoom, setSelectedRoom] = useState(null);
+
+  // This holds the new room name input for creation
+  const [newRoomName, setNewRoomName] = useState('');
+
+  // List of rooms fetched from the server
   const [rooms, setRooms] = useState([]);
+
+  // For displaying errors in the UI
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('authToken');
+    const storedUsername = localStorage.getItem('username');
+    if (!storedToken) {
+      router.push('/');
+    } else {
+      setToken(storedToken);
+      setUsername(storedUsername || 'Guest');
+    }
+  }, [router]);
 
   useEffect(() => {
     const fetchRooms = async () => {
       try {
         const res = await axios.get('/api/chatrooms', {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         setRooms(res.data);
-      } catch (error) {
-        console.error(error);
+        setError('');
+      } catch (err) {
+        console.error('Error fetching rooms:', err);
+        setError('Failed to fetch chat rooms. Please try again later.');
       }
     };
-    if (token) fetchRooms();
+    if (token) {
+      fetchRooms();
+    }
   }, [token]);
 
   const createRoom = async () => {
-    if (!roomName) return;
+    if (!newRoomName.trim()) {
+      setError('Room name cannot be empty');
+      return;
+    }
     try {
-      await axios.post('/api/chatrooms', { roomName }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setRooms([...rooms, { roomName, createdBy: username, createdAt: new Date() }]);
-    } catch (error) {
-      console.error(error);
+      // Pass the current username as 'createdBy'
+      const res = await axios.post(
+        '/api/chatrooms',
+        { roomName: newRoomName, createdBy: username },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      // The response should contain the newly created room object
+      setRooms([...rooms, res.data]);
+      setNewRoomName(''); // Clear input
+      setError('');
+    } catch (err) {
+      console.error('Error creating room:', err);
+      setError(err.response?.data?.error || 'Error creating room. Please try again later.');
     }
   };
 
+  // Called when user clicks "Exit Room" in ChatRoom
+  const handleExitRoom = () => {
+    setSelectedRoom(null);
+  };
+
+  if (!token) {
+    return null; // Optionally show a loading spinner
+  }
+
   return (
-    <div>
-      <h1>Welcome, {username}</h1>
-      <div style={{ display: 'flex' }}>
-        <div style={{ width: '30%', paddingRight: '20px' }}>
+    <div className={styles.container}>
+      <header className={styles.header}>Welcome, {username}</header>
+      <main className={styles.main}>
+        <aside className={styles.sidebar}>
           <h2>Chat Rooms</h2>
-          <ul>
+          {error && <p className={styles.error}>{error}</p>}
+          <ul className={styles.roomList}>
             {rooms.map((room, index) => (
               <li
                 key={index}
-                onClick={() => setRoomName(room.roomName)}
-                style={{ cursor: 'pointer' }}
+                onClick={() => setSelectedRoom(room)} // store the entire room object
+                className={styles.roomItem}
               >
                 {room.roomName}
               </li>
             ))}
           </ul>
-          <input
-            type="text"
-            placeholder="New Room Name"
-            value={roomName}
-            onChange={e => setRoomName(e.target.value)}
-          />
-          <button onClick={createRoom}>Create Room</button>
-        </div>
-        <div style={{ width: '70%' }}>
-          {roomName ? (
-            <div>
-              <ChatRoom token={token} roomName={roomName} username={username} />
+          <div className={styles.inputContainer}>
+            <input
+              type="text"
+              placeholder="New Room Name"
+              className={styles.input}
+              value={newRoomName}
+              onChange={(e) => setNewRoomName(e.target.value)}
+            />
+            <button onClick={createRoom} className={styles.button}>
+              Create
+            </button>
+          </div>
+        </aside>
+
+        <section className={styles.content}>
+          {selectedRoom ? (
+            <>
+              <ChatRoom
+                token={token}
+                roomName={selectedRoom.roomName}
+                username={username}
+                createdBy={selectedRoom.createdBy}
+                onExit={handleExitRoom}
+              />
               <SpeechToText onTranscribe={(text) => console.log('Transcribed:', text)} />
-            </div>
+            </>
           ) : (
-            <p>Select a room to join the conversation.</p>
+            <p className={styles.placeholder}>
+              Select a room to join the conversation.
+            </p>
           )}
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 };

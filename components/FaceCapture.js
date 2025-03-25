@@ -1,6 +1,28 @@
 import React, { useRef, useState, useEffect } from 'react';
 import * as faceapi from 'face-api.js';
 
+const videoContainerStyle = {
+  margin: '1rem 0',
+  textAlign: 'center',
+};
+
+const buttonContainerStyle = {
+  display: 'flex',
+  gap: '0.5rem',
+  justifyContent: 'center',
+  marginTop: '0.5rem',
+};
+
+const buttonStyle = {
+  padding: '0.5rem 1rem',
+  border: 'none',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  backgroundColor: '#6366f1', // Indigo
+  color: '#fff',
+  fontWeight: 'bold',
+};
+
 const FaceCapture = ({ onCapture }) => {
   const videoRef = useRef(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
@@ -14,9 +36,9 @@ const FaceCapture = ({ onCapture }) => {
         await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
         await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
         setModelsLoaded(true);
-        console.log("Models loaded successfully");
+        console.log('Models loaded successfully');
       } catch (error) {
-        console.error("Error loading face-api.js models:", error);
+        console.error('Error loading face-api.js models:', error);
       }
     };
     loadModels();
@@ -24,7 +46,7 @@ const FaceCapture = ({ onCapture }) => {
 
   const startCamera = async () => {
     if (!modelsLoaded) {
-      alert("Please wait! Models are still loading...");
+      alert('Please wait! Models are still loading...');
       return;
     }
     // Clear any previous captured image
@@ -36,20 +58,20 @@ const FaceCapture = ({ onCapture }) => {
         videoRef.current.srcObject = stream;
       }
     } catch (error) {
-      console.error("Error accessing webcam:", error);
-      alert("Could not access camera. Please allow camera permissions.");
+      console.error('Error accessing webcam:', error);
+      alert('Could not access camera. Please allow camera permissions.');
     }
   };
 
   const captureImage = async () => {
     if (!modelsLoaded) {
-      alert("Face model is still loading, please wait...");
+      alert('Face model is still loading, please wait...');
       return;
     }
+
     const video = videoRef.current;
     if (!video) return;
 
-    // Create a canvas to capture the current frame from the video
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -57,28 +79,25 @@ const FaceCapture = ({ onCapture }) => {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     try {
-      // Detect face and compute its descriptor
       const detection = await faceapi
         .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options())
         .withFaceLandmarks()
         .withFaceDescriptor();
 
       if (!detection) {
-        alert("No face detected. Try again.");
+        alert('No face detected. Try again.');
         return;
       }
 
-      // Convert the face descriptor to an array and get the captured image data URL
       const faceDescriptor = Array.from(detection.descriptor);
       const imageDataUrl = canvas.toDataURL('image/png');
 
-      // Save the captured image and call the parent's onCapture callback
       setCapturedImage(imageDataUrl);
       onCapture(faceDescriptor);
       stopCamera();
     } catch (error) {
-      console.error("Face detection error:", error);
-      alert("Error detecting face. Try again.");
+      console.error('Face detection error:', error);
+      alert('Error detecting face. Try again.');
     }
   };
 
@@ -90,23 +109,41 @@ const FaceCapture = ({ onCapture }) => {
   };
 
   return (
-    <div>
+    <div style={videoContainerStyle}>
       {capturedImage ? (
-        // Display captured image with an option to retake if needed
         <div>
-          <img src={capturedImage} alt="Captured Face" width="300" height="300" />
-          <button onClick={startCamera}>Retake</button>
+          <img
+            src={capturedImage}
+            alt="Captured Face"
+            style={{ width: '200px', height: '200px', objectFit: 'cover', borderRadius: '4px' }}
+          />
+          <div style={buttonContainerStyle}>
+            <button onClick={startCamera} style={buttonStyle}>
+              Retake
+            </button>
+          </div>
         </div>
       ) : isCameraOn ? (
-        // Show video feed along with buttons to capture or stop camera
         <div>
-          <video ref={videoRef} autoPlay playsInline width="300" height="300" />
-          <button onClick={captureImage}>Capture Image</button>
-          <button onClick={stopCamera}>Stop Camera</button>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            style={{ width: '200px', height: '200px', borderRadius: '4px', objectFit: 'cover' }}
+          />
+          <div style={buttonContainerStyle}>
+            <button onClick={captureImage} style={buttonStyle}>
+              Capture
+            </button>
+            <button onClick={stopCamera} style={buttonStyle}>
+              Stop
+            </button>
+          </div>
         </div>
       ) : (
-        // Show start camera button when camera is off
-        <button onClick={startCamera}>Start Camera</button>
+        <button onClick={startCamera} style={buttonStyle}>
+          Start Camera
+        </button>
       )}
     </div>
   );

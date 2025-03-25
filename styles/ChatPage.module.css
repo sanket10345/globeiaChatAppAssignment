@@ -1,0 +1,82 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f3f4f6;
+    font-family: 'Arial', sans-serif;
+  }
+  
+  .header {
+    background-color: #6366f1;
+    color: #fff;
+    padding: 1rem;
+    font-size: 1.25rem;
+  }
+  
+  .main {
+    display: flex;
+    flex: 1;
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .sidebar {
+    width: 25%;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  
+  .content {
+    width: 75%;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .roomList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .roomItem {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background-color: #f9fafb;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .inputContainer {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  .input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .button {
+    background-color: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  
+  .placeholder {
+    font-style: italic;
+    color: #666;
+  }
+  

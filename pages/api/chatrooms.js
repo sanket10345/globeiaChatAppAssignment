@@ -1,29 +1,37 @@
-import { connectToDatabase } from '../../utils/db';
-import jwt from 'jsonwebtoken';
+// pages/api/chatrooms.js
+import dbConnect from '../../utils/dbConnect';
+import ChatRoom from '../../models/ChatRoom';
 
 export default async function handler(req, res) {
-  // Verify token from the Authorization header
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
+  await dbConnect();
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const { db } = await connectToDatabase();
-
-    if (req.method === 'POST') {
-      // Create a new chat room
-      const { roomName } = req.body;
-      const newRoom = { roomName, createdBy: decoded.username, createdAt: new Date() };
-      await db.collection('chatrooms').insertOne(newRoom);
-      res.status(201).json(newRoom);
-    } else if (req.method === 'GET') {
-      // List all chat rooms
-      const rooms = await db.collection('chatrooms').find({}).toArray();
-      res.status(200).json(rooms);
-    } else {
-      res.status(405).json({ error: 'Method not allowed' });
+  if (req.method === 'GET') {
+    try {
+      const chatrooms = await ChatRoom.find({}).sort({ createdAt: 1 });
+      return res.status(200).json(chatrooms);
+    } catch (error) {
+      console.error("Error fetching chat rooms:", error);
+      return res.status(500).json({ error: "Server error" });
     }
-  } catch (error) {
-    res.status(401).json({ error: "Unauthorized" });
+  } else if (req.method === 'POST') {
+    const { roomName, createdBy } = req.body;
+    if (!roomName || !createdBy) {
+      return res.status(400).json({ error: "Room name and createdBy are required" });
+    }
+    try {
+      // Check for duplicate room name
+      const existing = await ChatRoom.findOne({ roomName });
+      if (existing) {
+        return res.status(400).json({ error: "Chat room already exists" });
+      }
+      const newRoom = await ChatRoom.create({ roomName, createdBy });
+      return res.status(201).json(newRoom);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Server error" });
+    }
+  } else {
+    res.setHeader('Allow', ['GET', 'POST']);
+    return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
 }
