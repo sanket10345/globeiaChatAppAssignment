@@ -83,10 +83,21 @@ const ChatPage = () => {
   if (!token) {
     return null; // Optionally show a loading spinner
   }
-
+  const handleLogout = () => {
+      // Store token and username in localStorage
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('username');
+      // Redirect to chat page
+      window.location.href = '/';
+  };
   return (
     <div className={styles.container}>
-      <header className={styles.header}>Welcome, {username}</header>
+  <header className={styles.header}>
+    <span>Welcome, {username}</span>
+    <button onClick={handleLogout} className={styles.logoutButton}>
+      Logout
+    </button>
+   </header>
       <main className={styles.main}>
         <aside className={styles.sidebar}>
           <h2>Chat Rooms</h2>
