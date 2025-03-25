@@ -3,7 +3,7 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import styles from '../styles/ChatRoom.module.css';
 
-const EXTERNAL_SOCKET_SERVER = process.env.MONGODB_URI; 
+const EXTERNAL_SOCKET_SERVER = process.env.EXTERNAL_SOCKET_SERVER; 
 
 const ChatRoom = ({ token, roomName, username, createdBy, onExit }) => {
   const [chatHistory, setChatHistory] = useState([]);
