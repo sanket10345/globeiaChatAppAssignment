@@ -3,6 +3,8 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import styles from '../styles/ChatRoom.module.css';
 
+const ExTERNAL_SOCKET_SERVER = process.env.MONGODB_URI; 
+
 const ChatRoom = ({ token, roomName, username, createdBy, onExit }) => {
   const [chatHistory, setChatHistory] = useState([]);
   const [message, setMessage] = useState('');
@@ -15,10 +17,10 @@ const ChatRoom = ({ token, roomName, username, createdBy, onExit }) => {
   // Initialize the socket connection on client side
   useEffect(() => {
     // Only run on client; use window.location.origin to connect to the same host.
-    socketRef.current = io(window.location.origin, {
+    socketRef.current = io(ExTERNAL_SOCKET_SERVER, {
       path: '/api/socket',
+      transports: ["websocket"], // Force WebSocket transport
     });
-
     socketRef.current.emit('join-room', { roomName, username });
 
     socketRef.current.on('receive-message', (newMessage) => {
