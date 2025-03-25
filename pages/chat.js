@@ -134,7 +134,6 @@ const ChatPage = ({ user, roomsRes, error: initialError }) => {
                 createdBy={selectedRoom.createdBy}
                 onExit={handleExitRoom}
               />
-              <SpeechToText onTranscribe={(text) => console.log('Transcribed:', text)} />
             </>
           ) : (
             <p className={styles.placeholder}>

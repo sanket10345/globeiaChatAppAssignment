@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import io from 'socket.io-client';
 import styles from '../styles/ChatRoom.module.css';
+import SpeechToText from './SpeechToText';
 
 const EXTERNAL_SOCKET_SERVER = process.env.NEXT_PUBLIC_EXTERNAL_SOCKET_SERVER; 
 
@@ -76,6 +77,9 @@ const ChatRoom = ({ token, roomName, username, createdBy, onExit }) => {
     }
   };
 
+  const handleTranscribedText = async(text)=>{
+    setMessage(text)
+  }
   const isAdmin = createdBy === username;
 
   return (
@@ -130,6 +134,7 @@ const ChatRoom = ({ token, roomName, username, createdBy, onExit }) => {
               Send
             </button>
           </div>
+          <SpeechToText onTranscribe={handleTranscribedText} />
         </div>
       </div>
     </div>
